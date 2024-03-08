@@ -35,6 +35,7 @@ echo "Database $db_name already exists"
 else
 mkdir "db/$db_name"
 echo "Database $db_name created"
+fi
 }
 
 list_databases(){
