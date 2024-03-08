@@ -29,3 +29,5 @@ Upon connecting to a specific database, there will be a new screen with the foll
 - There is an assumption that the first column is the Primary Key, which is used for deleting rows.
 - The selection of rows will be displayed on the screen/terminal in an accepted/good human format.
 - Keep track of data types (digits or strings) of columns and validate user input based on it.
+
+
