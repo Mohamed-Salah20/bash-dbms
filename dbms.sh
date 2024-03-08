@@ -28,7 +28,11 @@ echo "database_menu_display"
 
 #####database_functions#####
 create_database(){
+
 read -p "Database name : " db_name
+if db_exists $db_name; then
+echo "Database $db_name already exists"
+else
 mkdir "db/$db_name"
 echo "Database $db_name created"
 }
@@ -53,7 +57,12 @@ echo "valid db name"
 }
 
 db_exists(){
-echo "db exists"
+local db_name=$1
+if [ -d "db/$db_name" ]; then
+return 0
+else 
+return 1
+fi
 }
 ######################################
 
