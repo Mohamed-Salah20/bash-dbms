@@ -1,5 +1,6 @@
 #!/bin/bash
 
+shopt -s extglob
 
 # create db folder for the first script run in a certin path
 if [ ! -d db ]; then
@@ -30,16 +31,22 @@ echo "database_menu_display"
 create_database(){
 
 read -p "Database name : " db_name
-if db_exists $db_name; then
-echo "Database $db_name already exists"
-else
-mkdir "db/$db_name"
-echo "Database $db_name created"
+if valid_regex $db_name; then
+    if db_exists $db_name; then
+    echo "***Database  $db_name already exists***"
+    else
+    mkdir "db/$db_name"
+    echo "***Database $db_name created succefully***"
+    fi
+else 
+    echo "***Invalid Input, Enter a valid db name***"
 fi
+
 }
 
 list_databases(){
-echo "list databases"
+echo "List of databases : "
+ls db
 }
 
 drop_database(){
@@ -52,9 +59,17 @@ echo "connect database"
 ########end of database_functions######
 
 
-########database creation functions validations #####
-valid_db_name(){
-echo "valid db name"
+########database creation functions validations#####
+#check db name regex 
+valid_regex(){
+local input=$1
+echo $input
+regex='^[A-Za-z0-9_-]*$'
+if [[ $input =~ $regex ]]; then
+return 1
+else
+return 0 
+fi
 }
 
 db_exists(){
@@ -93,6 +108,7 @@ read -p "enter your choice : " choice
 case $choice in
 
 1) create_database ;;
+2) list_databases ;;
 5) exit 0 ;;
 *) echo "wrong input" ;;
 
