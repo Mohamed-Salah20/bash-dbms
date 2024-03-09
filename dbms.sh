@@ -35,7 +35,7 @@ if valid_regex $db_name; then
     if db_exists $db_name; then
     echo "***Database  $db_name already exists***"
     else
-    mkdir "db/$db_name"
+    mkdir "./$db_name"
     echo "***Database $db_name created succefully***"
     fi
 else 
@@ -50,7 +50,18 @@ ls db
 }
 
 drop_database(){
-echo "drop database"
+    read -p "Database name :"  db_name
+    if valid_regex "$db_name"
+        then
+            if db_exists $db_name
+                then
+                rm -rf "./$db_name"
+                echo "database" $db_name "Deleted successfully"
+            else
+                echo "***Database $db_name does not exist***"
+            fi
+    fi
+
 }
 
 connect_database(){
@@ -63,21 +74,22 @@ echo "connect database"
 #check db name regex 
 valid_regex(){
 local input=$1
-echo $input
 regex='^[A-Za-z0-9_-]*$'
-if [[ $input =~ $regex ]]; then
-return 1
+if [[ $input =~ "$regex" ]]; then
+    return 1
 else
-return 0 
+    return 0 
 fi
 }
 
 db_exists(){
 local db_name=$1
-if [ -d "db/$db_name" ]; then
-return 0
+if [ -d "./$db_name" ]
+then
+    echo "db already exists"
+    return 0
 else 
-return 1
+    return 1
 fi
 }
 ######################################
@@ -109,6 +121,7 @@ case $choice in
 
 1) create_database ;;
 2) list_databases ;;
+4) drop_database ;;
 5) exit 0 ;;
 *) echo "wrong input" ;;
 
