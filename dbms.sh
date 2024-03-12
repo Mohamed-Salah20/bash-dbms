@@ -21,11 +21,19 @@ main_menu_display(){
     echo "************"
     echo -e "\n"
 }
-
 # Display Database menu
 database_menu_display(){
-echo "database_menu_display"
+    echo -e "\n"
+    echo "***********"
+    echo "Database Menu:"
+    echo "1. create table"
+    echo "2. list tables"
+    echo "3. drop table"
+    echo "4. exit"
+    echo "************"
 }
+
+
 
 #####database_functions#####
 create_database(){
@@ -35,7 +43,8 @@ if valid_regex $db_name; then
     if db_exists $db_name; then
     echo "***Database  $db_name already exists***"
     else
-    mkdir "./$db_name"
+    mkdir "./db/$db_name"
+    cd "./db"
     echo "***Database $db_name created succefully***"
     fi
 else 
@@ -46,7 +55,7 @@ fi
 
 list_databases(){
 echo "List of databases : "
-ls db
+ls "./db"
 }
 
 drop_database(){
@@ -55,7 +64,7 @@ drop_database(){
         then
             if db_exists $db_name
                 then
-                rm -rf "./$db_name"
+                rm -rf "./db/$db_name"
                 echo "database" $db_name "Deleted successfully"
             else
                 echo "***Database $db_name does not exist***"
@@ -65,7 +74,14 @@ drop_database(){
 }
 
 connect_database(){
-echo "connect database"
+
+read -p "Database name : " db_name
+if db_exists $db_name; then
+    cd "./db/$db_name"
+    echo "connect database"
+    else
+    echo "***Database $db_name does not exist***"
+    fi
 }
 ########end of database_functions######
 
@@ -84,7 +100,7 @@ fi
 
 db_exists(){
 local db_name=$1
-if [ -d "./$db_name" ]
+if [ -d "./db/$db_name" ]
 then
     echo "db already exists"
     return 0
@@ -99,15 +115,29 @@ fi
 ####database_table_functions#####
 
 create_database_table(){
-echo "create table"
+    read -p "Enter Table name : " table_name
+    if [ -f "./$table_name" ]
+    then
+        echo "***Table $table_name already exists***"
+    else
+        touch ./$table_name
+        echo "Table Created Successfully"
+    fi
 }
 
 list_database_tables(){
-echo "list tables"
+ls 
 }
 
 drop_database_table(){
-echo "drop table"
+    read -p "Enter Table name : " table_name
+    if [ -f "./$table_name" ]; then
+    rm -rf ./$table_name
+    echo "Table Deleted Successfully"
+    else
+    echo "***Table $table_name does not exist***"
+    fi
+
 }
 
 #######end of database_table_functions##########
@@ -117,13 +147,29 @@ echo "drop table"
 while true; do
 main_menu_display
 read -p "enter your choice : " choice
-case $choice in
 
+case $choice in
 1) create_database ;;
 2) list_databases ;;
+3) connect_database ;;
 4) drop_database ;;
 5) exit 0 ;;
 *) echo "wrong input" ;;
-
 esac
+
+if [[ $choice == 3 ]] 
+then
+    while true; do
+    database_menu_display
+    read -p "enter your choice : " choice
+    case $choice in
+        1) create_database_table ;;
+        2) list_database_tables ;;
+        3) drop_database_table ;;
+        4) break ;;
+        *) echo "wrong input" ;;
+    esac
+    done
+fi
+
 done
