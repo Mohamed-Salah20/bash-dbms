@@ -39,13 +39,13 @@ database_menu_display(){
 create_database(){
 
 read -p "Database name : " db_name
-if valid_regex $db_name; then
+if valid_regex "$db_name"; then
     if db_exists $db_name; then
     echo "***Database  $db_name already exists***"
     else
     mkdir "./db/$db_name"
-    cd "./db/$db_name"
-    choice=3    #to connect to the database
+    # cd "./db/$db_name"
+    # choice=3    #to connect to the database
     echo "***Database $db_name created succefully***"
     fi
 else 
@@ -92,10 +92,10 @@ if db_exists $db_name; then
 valid_regex(){
 local input=$1
 regex='^[A-Za-z0-9_-]*$'
-if [[ $input =~ "$regex" ]]; then
-    return 1
+if [[ $input =~ $regex ]]; then
+    return 0
 else
-    return 0 
+    return 1 
 fi
 }
 
