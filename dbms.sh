@@ -124,6 +124,13 @@ create_database_table(){
         echo "***Table $table_name already exists***"
     else
         touch ./$table_name
+        # if [ ! -f "./Metadata.inf" ]
+        # then
+        #     touch ./Metadata.inf
+        
+        # else
+        #     echo "$table_name: " >> Metadata.inf
+        # fi
         echo "Table Created Successfully"
         
         choice=3 # to connect to database
@@ -151,6 +158,7 @@ drop_database_table(){
 set_table_schema() {
     read -p "Enter Number of Columns: " columns_count
     local array=()
+    local data_Types_Array=()
     is_primary_key='n'
     for ((i = 0; i < ${columns_count}; i++));
     do
@@ -162,20 +170,23 @@ set_table_schema() {
                 echo "***Column $column_name already exists***"
                 continue
             else
-                array[i]=$column_name
+                array[i]=$column_name":" #store columns separated by colons
             fi      
             read -p "Enter column type : " column_type
+            data_Types_Array[i]=$column_type":" #store data types separated by colons
             if [[ $is_primary_key != "y" && $is_primary_key != "Y" ]]; then
                 read -p "is Primary key (y/n): " is_primary_key
-                if [[ $is_primary_key == "y" || $is_primary_key ]]; then
-                    array[i]+="(PK)"
+                if [[ $is_primary_key == "y" || $is_primary_key == "Y" ]]; then
+                    echo $column_name >> $table_name #store the primary key
                 fi
             fi
         else
             echo "***Invalid Input, Enter a valid column name***"
         fi    
     done
-    echo "Column Names:" ${array[@]}
+    # save schema to table file
+    echo ${data_Types_Array[@]} >> $table_name
+    echo ${array[@]} >> $table_name
 }
 
 check_column_type() {
