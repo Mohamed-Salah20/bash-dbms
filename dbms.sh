@@ -8,6 +8,18 @@ mkdir db
 fi
 
 
+#use this function for all name validation checks, note 0 return statues is success while 1 is failure 
+valid_regex(){
+local input=$1
+regex='^[A-Za-z0-9_-]*$'
+if [[ $input =~ $regex ]]; then
+    return 0 #return successful
+else
+    return 1 #return failed
+fi
+}
+
+
 # Display main menu
 main_menu_display(){
     echo -e "\n"
@@ -79,26 +91,16 @@ connect_database(){
 read -p "Database name : " db_name
 if db_exists $db_name; then
     cd "./db/$db_name"
-    echo "connect database"
-    else
+    echo "connect to database $db_name"
+    database_menu
+else
     echo "***Database $db_name does not exist***"
-    fi
+fi
 }
 ########end of database_functions######
 
 
 ########database creation functions validations#####
-#check db name regex 
-valid_regex(){
-local input=$1
-regex='^[A-Za-z0-9_-]*$'
-if [[ $input =~ $regex ]]; then
-    return 0
-else
-    return 1 
-fi
-}
-
 db_exists(){
 local db_name=$1
 if [ -d "./db/$db_name" ]
@@ -154,17 +156,21 @@ set_table_schema() {
     do
         echo "flage $is_primary_key"
         read -p "Enter column name : " column_name
-        if [[ ${array[@]} =~ column_name  ]]; then
-            (( i-- ))
-            echo "***Column $column_name already exists***"
-            continue
+        if valid_regex "$column_name"; then
+            if [[ ${array[@]} =~ column_name  ]]; then
+                (( i-- ))
+                echo "***Column $column_name already exists***"
+                continue
+            else
+            array[i]=$column_name
+            fi      
+            read -p "Enter column type : " column_type
+            if [[ $is_primary_key != "y" && $is_primary_key != "Y" ]]; then
+                read -p "is Primary key (y/n): " is_primary_key
+            fi
         else
-        array[i]=$column_name
-        fi      
-        read -p "Enter column type : " column_type
-        if [[ $is_primary_key != "y" && $is_primary_key != "Y" ]]; then
-            read -p "is Primary key (y/n): " is_primary_key
-        fi
+            echo "***Invalid Input, Enter a valid column name***"
+        fi    
     done
     echo "Column Names:" ${array[@]}
 }
@@ -182,6 +188,8 @@ check_column_type() {
 
 #################starting of the script################
 
+main_menu(){
+
 while true; do
 main_menu_display
 read -p "enter your choice : " choice
@@ -195,8 +203,11 @@ case $choice in
 *) echo "wrong input" ;;
 esac
 echo $choice
-if [[ $choice == 3 ]] 
-then
+done
+
+}
+
+database_menu(){
     while true; do
     database_menu_display
     read -p "enter your choice : " choice
@@ -204,10 +215,12 @@ then
         1) create_database_table ;;
         2) list_database_tables ;;
         3) drop_database_table ;;
-        4) break ;;
+        4) cd ..
+            main_menu ;;
         *) echo "wrong input" ;;
     esac
     done
-fi
+}
 
-done
+main_menu
+
