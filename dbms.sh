@@ -44,7 +44,8 @@ if valid_regex $db_name; then
     echo "***Database  $db_name already exists***"
     else
     mkdir "./db/$db_name"
-    cd "./db"
+    cd "./db/$db_name"
+    choice=3    #to connect to the database
     echo "***Database $db_name created succefully***"
     fi
 else 
@@ -122,7 +123,12 @@ create_database_table(){
     else
         touch ./$table_name
         echo "Table Created Successfully"
+        
+        choice=3 # to connect to database
+        PS1="$db_name-$table_name: "
+        set_table_schema
     fi
+
 }
 
 list_database_tables(){
@@ -140,6 +146,38 @@ drop_database_table(){
 
 }
 
+set_table_schema() {
+    read -p "Enter Number of Columns: " columns_count
+    local array=()
+    is_primary_key='n'
+    for ((i = 0; i < ${columns_count}; i++));
+    do
+        echo "flage $is_primary_key"
+        read -p "Enter column name : " column_name
+        if [[ ${array[@]} =~ column_name  ]]; then
+            (( i-- ))
+            echo "***Column $column_name already exists***"
+            continue
+        else
+        array[i]=$column_name
+        fi      
+        read -p "Enter column type : " column_type
+        if [[ $is_primary_key != "y" && $is_primary_key != "Y" ]]; then
+            read -p "is Primary key (y/n): " is_primary_key
+        fi
+    done
+    echo "Column Names:" ${array[@]}
+}
+
+check_column_type() {
+    read -p "Enter column type : " column_type
+    if [ "$column_type" = "int" ]
+    then
+        return 1
+    else
+        return 0
+    fi
+}
 #######end of database_table_functions##########
 
 #################starting of the script################
@@ -156,7 +194,7 @@ case $choice in
 5) exit 0 ;;
 *) echo "wrong input" ;;
 esac
-
+echo $choice
 if [[ $choice == 3 ]] 
 then
     while true; do
