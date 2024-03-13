@@ -162,11 +162,14 @@ set_table_schema() {
                 echo "***Column $column_name already exists***"
                 continue
             else
-            array[i]=$column_name
+                array[i]=$column_name
             fi      
             read -p "Enter column type : " column_type
             if [[ $is_primary_key != "y" && $is_primary_key != "Y" ]]; then
                 read -p "is Primary key (y/n): " is_primary_key
+                if [[ $is_primary_key == "y" || $is_primary_key ]]; then
+                    array[i]+="(PK)"
+                fi
             fi
         else
             echo "***Invalid Input, Enter a valid column name***"
@@ -202,7 +205,6 @@ case $choice in
 5) exit 0 ;;
 *) echo "wrong input" ;;
 esac
-echo $choice
 done
 
 }
