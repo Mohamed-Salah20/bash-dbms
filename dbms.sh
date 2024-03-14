@@ -41,34 +41,42 @@ database_menu_display(){
     echo "1. create table"
     echo "2. list tables"
     echo "3. drop table"
-    echo "4. exit"
+    echo "4. CRUD Function"    
+    echo "5. exit"
     echo "************"
 }
+table_menu_display(){
+    echo "***********"
+    echo "Table Menu:"
+    echo "1. select from $table_name"
+    echo "2. insert into $table_name"
+    echo "3. delete from $table_name"
+    echo "4. update $table_name"
+    echo "5. exit"
 
-
-
+}
 #####database_functions#####
 create_database(){
 
-read -p "Database name : " db_name
-if valid_regex "$db_name"; then
-    if db_exists $db_name; then
-    echo "***Database  $db_name already exists***"
-    else
-    mkdir "./db/$db_name"
-    # cd "./db/$db_name"
-    # choice=3    #to connect to the database
-    echo "***Database $db_name created succefully***"
+    read -p "Database name : " db_name
+    if valid_regex "$db_name"; then
+        if db_exists $db_name; then
+        echo "***Database  $db_name already exists***"
+        else
+        mkdir "./db/$db_name"
+        # cd "./db/$db_name"
+        # choice=3    #to connect to the database
+        echo "***Database $db_name created succefully***"
+        fi
+    else 
+        echo "***Invalid Input, Enter a valid db name***"
     fi
-else 
-    echo "***Invalid Input, Enter a valid db name***"
-fi
 
 }
 
 list_databases(){
-echo "List of databases : "
-ls "./db"
+    echo "List of databases : "
+    ls "./db"
 }
 
 drop_database(){
@@ -88,19 +96,20 @@ drop_database(){
 
 connect_database(){
 
-read -p "Database name : " db_name
-if valid_regex "$db_name"; then
+    read -p "Database name : " db_name
+    if valid_regex "$db_name"; then
 
-    if db_exists $db_name; then
-        cd "./db/$db_name"
-        echo "connect to database $db_name"
-        database_menu
-    else
-        echo "***Database $db_name does not exist***"
+        if db_exists $db_name; then
+            cd "./db/$db_name"
+            echo "connect to database $db_name"
+            PS1=$db_name">> "
+            database_menu
+        else
+            echo "***Database $db_name does not exist***"
+        fi
+    else 
+        echo "***Invalid Input, Enter a valid db name***"
     fi
-else 
-    echo "***Invalid Input, Enter a valid db name***"
-fi
 }
 ########end of database_functions######
 
@@ -123,8 +132,7 @@ fi
 
 create_database_table(){
     read -p "Enter Table name : " table_name
-
-if valid_regex "$table_name"; then
+    if valid_regex "$table_name"; then
     if [ -f "./$table_name" ]
     then
         echo "***Table $table_name already exists***"
@@ -143,9 +151,9 @@ if valid_regex "$table_name"; then
         # PS1="$db_name-$table_name: "
         set_table_schema
     fi
-else
-    echo "***Invalid Input, Enter a valid name***"
-fi
+    else
+        echo "***Invalid Input, Enter a valid name***"
+    fi
 }
 
 list_database_tables(){
@@ -170,7 +178,6 @@ set_table_schema() {
     local is_primary_key='n'
     for ((i = 0; i < ${columns_count}; i++));
     do
-        echo "flage $is_primary_key"
         read -p "Enter column name : " column_name
         if valid_regex "$column_name"; then
             if [[ ${array[@]} =~ "$column_name"  ]]; then
@@ -216,6 +223,35 @@ check_column_type() {
 }
 #######end of database_table_functions##########
 
+#######CRUD Operations##########
+insert_into_table() {
+    echo "insert into table"
+}
+
+delete_from_table() {
+    echo "delete from table"
+}
+
+update_into_table() {
+    echo "update into table"
+}
+connect_to_table() {
+    read -p "opent table: " table_name
+    if [ -f "./$table_name" ]; then
+        echo "connected"
+    else
+        echo "***Table $table_name does not exist***"
+    fi
+    clear
+    table_menu
+
+}
+select_from_table() {
+    #Select * from Table
+    # read -p "Enter Query: " QueryString
+    awk 'BEGIN{FS=": ";} {if(NR> 3){gsub(/:/, "\t|\t", $0);print;}}' ./$table_name
+
+}
 #################starting of the script################
 
 main_menu(){
@@ -244,9 +280,24 @@ database_menu(){
         1) create_database_table ;;
         2) list_database_tables ;;
         3) drop_database_table ;;
-        4) cd ..
+        4) connect_to_table;;
+        5) cd ..
             main_menu ;;
         *) echo "wrong input" ;;
+    esac
+    done
+}
+
+table_menu() {
+    while true; do
+    table_menu_display
+    read -p "enter your choice : " choice
+    case $choice in
+        1) select_from_table ;;
+        2) insert_into_table ;;
+        3) delete_from_table ;;
+        4) update_into_table ;;
+        5) exit 0 ;;
     esac
     done
 }
