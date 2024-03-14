@@ -183,7 +183,7 @@ set_table_schema() {
 
             read -p "Enter column type : " column_type
             if check_column_type "$column_type"; then
-                data_Types_Array[i]=":"$column_type #store data types separated by colons
+                data_Types_Array[i]=$column_type":" #store data types separated by colons
                 if [[ $is_primary_key != "y" && $is_primary_key != "Y" ]]; then
                     read -p "is Primary key (y/n): " is_primary_key
                     if [[ $is_primary_key == "y" || $is_primary_key == "Y" ]]; then
