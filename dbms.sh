@@ -41,8 +41,7 @@ database_menu_display(){
     echo "1. create table"
     echo "2. list tables"
     echo "3. drop table"
-    echo "4. CRUD Function"    
-    echo "5. exit"
+    echo "4. exit"
     echo "************"
 }
 table_menu_display(){
@@ -99,17 +98,16 @@ connect_database(){
     read -p "Database name : " db_name
     if valid_regex "$db_name"; then
 
-        if db_exists $db_name; then
-            cd "./db/$db_name"
-            echo "connect to database $db_name"
-            PS1=$db_name">> "
-            database_menu
-        else
-            echo "***Database $db_name does not exist***"
-        fi
-    else 
-        echo "***Invalid Input, Enter a valid db name***"
+    if db_exists $db_name; then
+        cd "./db/$db_name"
+        echo "connect to database $db_name"
+        database_menu
+    else
+        echo "***Database $db_name does not exist***"
     fi
+else 
+    echo "***Invalid Input, Enter a valid db name***"
+fi
 }
 ########end of database_functions######
 
@@ -185,12 +183,12 @@ set_table_schema() {
                 echo "***Column $column_name already exists***"
                 continue
             else
-                array[i]=$column_name":" #store columns separated by colons
+                array[i]=$column_name #store columns in array
             fi      
 
             read -p "Enter column type : " column_type
             if check_column_type "$column_type"; then
-                data_Types_Array[i]=$column_type":" #store data types separated by colons
+                data_Types_Array[i]=$column_type #store data types in array
                 if [[ $is_primary_key != "y" && $is_primary_key != "Y" ]]; then
                     read -p "is Primary key (y/n): " is_primary_key
                     if [[ $is_primary_key == "y" || $is_primary_key == "Y" ]]; then
@@ -208,8 +206,20 @@ set_table_schema() {
     done
     # save schema to table file
     echo ${#array[@]} >> $table_name # store columns number in schema
-    echo ${data_Types_Array[@]} >> $table_name
-    echo ${array[@]} >> $table_name
+    
+     # separate elements by delim :
+    array_delimitar=$(printf ":%s" ${array[@]})
+    data_Types_Array_Delimitar=$(printf ":%s" ${data_Types_Array[@]})
+     #cut the first : delim before first element
+    array_delimitar=${array_delimitar:1}
+    data_Types_Array_Delimitar=${data_Types_Array_Delimitar:1}
+
+    echo $array_delimitar
+    echo $data_Types_Array_Delimitar
+
+     #write to the file
+    echo ${data_Types_Array_Delimitar} >> $table_name
+    echo ${array_delimitar} >> $table_name
     echo "schema created successfully"
 }
 
@@ -222,6 +232,58 @@ check_column_type() {
     esac
 }
 #######end of database_table_functions##########
+
+#############################################
+####################CRUD OPERATIONS##########
+
+insert() {
+  # Get table name and validate
+  read -p "Enter Table name: " table_name
+  if ! valid_regex "$table_name"; then
+    echo "Invalid table name"
+    return 1
+  fi
+
+  # Check if table exists
+  if [ ! -f "$table_name" ]; then
+    echo "Table '$table_name' does not exist"
+    return 1
+  fi
+
+  # Read schema details
+  columns_count=$(awk 'NR==2 {print}' "$table_name")
+  columns_names_arr=($(awk 'NR==4 {print}' "$table_name" | tr ":" " "))
+
+  # Prompt for data for each column
+  data_values=""
+  for ((i = 0; i < columns_count; i++)); do
+    read -p "Enter value for '${columns_names_arr[$i]}': " data
+    data_values+="$data:"
+  done
+
+  # Remove the trailing colon from data_values
+  data_values=${data_values::-1}
+
+  # Append data to the table file
+  echo "$data_values" >> "$table_name"
+
+  echo "Data inserted successfully!"
+}
+
+selectt(){
+    echo "SELECT"
+}
+
+delete(){
+    echo "DELETE"
+}
+
+update(){
+    echo "UPDATE"
+}
+
+##################END OF CRUD############
+############################################
 
 #######CRUD Operations##########
 insert_into_table() {
@@ -273,6 +335,7 @@ done
 }
 
 database_menu(){
+    
     while true; do
     database_menu_display
     read -p "enter your choice : " choice
@@ -280,8 +343,7 @@ database_menu(){
         1) create_database_table ;;
         2) list_database_tables ;;
         3) drop_database_table ;;
-        4) connect_to_table;;
-        5) cd ..
+        4) cd ..
             main_menu ;;
         *) echo "wrong input" ;;
     esac
