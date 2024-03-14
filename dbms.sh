@@ -41,7 +41,8 @@ database_menu_display(){
     echo "1. create table"
     echo "2. list tables"
     echo "3. drop table"
-    echo "4. exit"
+    echo "4. connect to table"
+    echo "5. exit"
     echo "************"
 }
 table_menu_display(){
@@ -270,26 +271,6 @@ insert() {
   echo "Data inserted successfully!"
 }
 
-selectt(){
-    echo "SELECT"
-}
-
-delete(){
-    echo "DELETE"
-}
-
-update(){
-    echo "UPDATE"
-}
-
-##################END OF CRUD############
-############################################
-
-#######CRUD Operations##########
-insert_into_table() {
-    echo "insert into table"
-}
-
 delete_from_table() {
     echo "delete from table"
 }
@@ -310,10 +291,11 @@ connect_to_table() {
 }
 select_from_table() {
     #Select * from Table
-    # read -p "Enter Query: " QueryString
     awk 'BEGIN{FS=": ";} {if(NR> 3){gsub(/:/, "\t|\t", $0);print;}}' ./$table_name
 
 }
+################# END OF CRUD #################
+
 #################starting of the script################
 
 main_menu(){
@@ -343,7 +325,8 @@ database_menu(){
         1) create_database_table ;;
         2) list_database_tables ;;
         3) drop_database_table ;;
-        4) cd ..
+        4) connect_to_table ;;
+        5) cd ..
             main_menu ;;
         *) echo "wrong input" ;;
     esac
