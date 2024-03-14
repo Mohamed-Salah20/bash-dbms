@@ -200,6 +200,7 @@ set_table_schema() {
         fi    
     done
     # save schema to table file
+    echo ${#array[@]} >> $table_name # store columns number in schema
     echo ${data_Types_Array[@]} >> $table_name
     echo ${array[@]} >> $table_name
     echo "schema created successfully"
