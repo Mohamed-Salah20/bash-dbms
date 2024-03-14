@@ -233,27 +233,39 @@ check_column_type() {
 #############################################
 ####################CRUD OPERATIONS##########
 
-insert(){
-    # echo "INSERT"
-    
-    read -p "Enter Table name: " table_name
-    if valid_regex "$table_name"; then
-        if [ -f "$table_name" ]; then
-        # logic
-           echo "$table_name found"
-        #    columns_count=${sed -n '2p' "$table_name"}
-           columns_count=$(awk 'NR==2 {print}' "$table_name")
-           
-        echo "columns_count : $columns_count"
-        
-        else
-            echo "$table_name does not exist"
-        fi
-    else
-        echo "Invalid regex"
-    fi
-}
+insert() {
+  # Get table name and validate
+  read -p "Enter Table name: " table_name
+  if ! valid_regex "$table_name"; then
+    echo "Invalid table name"
+    return 1
+  fi
 
+  # Check if table exists
+  if [ ! -f "$table_name" ]; then
+    echo "Table '$table_name' does not exist"
+    return 1
+  fi
+
+  # Read schema details
+  columns_count=$(awk 'NR==2 {print}' "$table_name")
+  columns_names_arr=($(awk 'NR==4 {print}' "$table_name" | tr ":" " "))
+
+  # Prompt for data for each column
+  data_values=""
+  for ((i = 0; i < columns_count; i++)); do
+    read -p "Enter value for '${columns_names_arr[$i]}': " data
+    data_values+="$data:"
+  done
+
+  # Remove the trailing colon from data_values
+  data_values=${data_values::-1}
+
+  # Append data to the table file
+  echo "$data_values" >> "$table_name"
+
+  echo "Data inserted successfully!"
+}
 
 selectt(){
     echo "SELECT"
