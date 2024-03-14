@@ -89,12 +89,17 @@ drop_database(){
 connect_database(){
 
 read -p "Database name : " db_name
-if db_exists $db_name; then
-    cd "./db/$db_name"
-    echo "connect to database $db_name"
-    database_menu
-else
-    echo "***Database $db_name does not exist***"
+if valid_regex "$db_name"; then
+
+    if db_exists $db_name; then
+        cd "./db/$db_name"
+        echo "connect to database $db_name"
+        database_menu
+    else
+        echo "***Database $db_name does not exist***"
+    fi
+else 
+    echo "***Invalid Input, Enter a valid db name***"
 fi
 }
 ########end of database_functions######
@@ -105,7 +110,6 @@ db_exists(){
 local db_name=$1
 if [ -d "./db/$db_name" ]
 then
-    echo "db already exists"
     return 0
 else 
     return 1
@@ -119,6 +123,8 @@ fi
 
 create_database_table(){
     read -p "Enter Table name : " table_name
+
+if valid_regex "$table_name"; then
     if [ -f "./$table_name" ]
     then
         echo "***Table $table_name already exists***"
@@ -133,11 +139,13 @@ create_database_table(){
         # fi
         echo "Table Created Successfully"
         
-        choice=3 # to connect to database
-        PS1="$db_name-$table_name: "
+        # choice=3 # to connect to database
+        # PS1="$db_name-$table_name: "
         set_table_schema
     fi
-
+else
+    echo "***Invalid Input, Enter a valid name***"
+fi
 }
 
 list_database_tables(){
@@ -159,27 +167,34 @@ set_table_schema() {
     read -p "Enter Number of Columns: " columns_count
     local array=()
     local data_Types_Array=()
-    is_primary_key='n'
+    local is_primary_key='n'
     for ((i = 0; i < ${columns_count}; i++));
     do
         echo "flage $is_primary_key"
         read -p "Enter column name : " column_name
         if valid_regex "$column_name"; then
-            if [[ ${array[@]} =~ column_name  ]]; then
+            if [[ ${array[@]} =~ "$column_name"  ]]; then
                 (( i-- ))
                 echo "***Column $column_name already exists***"
                 continue
             else
                 array[i]=$column_name":" #store columns separated by colons
             fi      
+
             read -p "Enter column type : " column_type
-            data_Types_Array[i]=$column_type":" #store data types separated by colons
-            if [[ $is_primary_key != "y" && $is_primary_key != "Y" ]]; then
-                read -p "is Primary key (y/n): " is_primary_key
-                if [[ $is_primary_key == "y" || $is_primary_key == "Y" ]]; then
-                    echo $column_name >> $table_name #store the primary key
+            if check_column_type "$column_type"; then
+                data_Types_Array[i]=":"$column_type #store data types separated by colons
+                if [[ $is_primary_key != "y" && $is_primary_key != "Y" ]]; then
+                    read -p "is Primary key (y/n): " is_primary_key
+                    if [[ $is_primary_key == "y" || $is_primary_key == "Y" ]]; then
+                        echo $column_name >> $table_name #store the primary key
+                    fi
                 fi
-            fi
+            else
+                echo "***Invalid column type***"
+                (( i-- ))
+                continue
+            fi    
         else
             echo "***Invalid Input, Enter a valid column name***"
         fi    
@@ -187,16 +202,16 @@ set_table_schema() {
     # save schema to table file
     echo ${data_Types_Array[@]} >> $table_name
     echo ${array[@]} >> $table_name
+    echo "schema created successfully"
 }
 
 check_column_type() {
-    read -p "Enter column type : " column_type
-    if [ "$column_type" = "int" ]
-    then
-        return 1
-    else
-        return 0
-    fi
+    case "$1" in
+        string | int )
+            return 0 ;;  # Return 0 for success
+        *) 
+            return 1 ;;  # Return 1 for failure
+    esac
 }
 #######end of database_table_functions##########
 
