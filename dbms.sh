@@ -242,17 +242,21 @@ validate_value_type(){
     local value=$1
     local index=$2
     isValid=false #flag to check if value is valid for this column type
-    if [[ $value =~ ^[0-9]+$ && ${columns_types_arr[$index]} == 'int' ]]; then
+    if [[ $value =~ ^[0-9]+$ && ${columns_types_arr[$index]} == 'digit' ]]; then
         echo "Integer"
         isValid=true
-    elif [[ $value =~ ^[0-9]+\.[0-9]+$ && ${columns_types_arr[$index]} == 'float' ]]; then
+
+    #mo note:why float? if so we should add another column type in schema  
+    elif [[ $value =~ ^[0-9]+\.[0-9]+$ && ${columns_types_arr[$index]} == 'digit' ]]; then
         echo "Float"
         isValid=true
-    elif [[ $value =~ ^(?![0-9]*$)[a-zA-Z0-9]+$ && ${columns_types_arr[$index]} == 'string' ]]; then
+
+    #mo note:string old regex used is not working ^(?![0-9]*$)[a-zA-Z0-9]+$, also storing only digits as strings should be acceptable, the same goes for - and _
+    elif [[ $value =~ ^[a-zA-Z0-9_-]+$ && ${columns_types_arr[$index]} == 'string' ]]; then
         echo "String"
         isValid=true
     else
-        #echo "Invalid Input"
+        echo "Invalid Input"
         isValid=false
     fi
 }
