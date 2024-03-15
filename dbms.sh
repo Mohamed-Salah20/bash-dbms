@@ -237,10 +237,25 @@ check_column_type() {
 #############################################
 ####################CRUD OPERATIONS##########
 
-check_column_actual_type(){
-echo "test"
+validate_value_type(){
+    #check whether the value type is valid for the value type of the column type
+    local value=$1
+    local index=$2
+    isValid=false #flag to check if value is valid for this column type
+    if [[ $value =~ ^[0-9]+$ && ${columns_types_arr[$index]} == 'int' ]]; then
+        echo "Integer"
+        isValid=true
+    elif [[ $value =~ ^[0-9]+\.[0-9]+$ && ${columns_types_arr[$index]} == 'float' ]]; then
+        echo "Float"
+        isValid=true
+    elif [[ $value =~ ^(?![0-9]*$)[a-zA-Z0-9]+$ && ${columns_types_arr[$index]} == 'string' ]]; then
+        echo "String"
+        isValid=true
+    else
+        #echo "Invalid Input"
+        isValid=false
+    fi
 }
-
 
 check_digit_validate_type(){
     if [[ $1 =~ ^[0-9]+$ ]]; then
@@ -263,17 +278,17 @@ check_string_validate_type(){
 
 insert() {
     # Get table name and validate
-    read -p "Enter Table name: " table_name
-    if ! valid_regex "$table_name"; then
-    echo "Invalid table name"
-    return 1
-    fi
+    # read -p "Enter Table name: " table_name
+    # if ! valid_regex "$table_name"; then
+    # echo "Invalid table name"
+    # return 1
+    # fi
 
-    # Check if table exists
-    if [ ! -f "$table_name" ]; then
-    echo "Table '$table_name' does not exist"
-    return 1
-    fi
+    # # Check if table exists
+    # if [ ! -f "$table_name" ]; then
+    # echo "Table '$table_name' does not exist"
+    # return 1
+    # fi
 
     # Read schema details
     columns_count=$(awk 'NR==2 {print}' "$table_name")
@@ -281,26 +296,32 @@ insert() {
     columns_types_arr=($(awk 'NR==3 {print}' "$table_name" | tr ":" " "))
 
     # testing
-    echo "columns_count : $columns_count"
-    echo "columns_name : ${columns_names_arr[@]}"
-    echo "column_types_arr : ${columns_types_arr[@]}"
-    echo "column_names_index : ${columns_names_arr[0]}"
+    # echo "columns_count : $columns_count"
+    # echo "columns_name : ${columns_names_arr[@]}"
+    # echo "column_types_arr : ${columns_types_arr[@]}"
+    # echo "column_names_index : ${columns_names_arr[0]}"
 
     # Prompt for data for each column
     data_values=""
     for ((i = 0; i < columns_count; i++)); do
     read -p "Enter value for '${columns_names_arr[$i]}' of data type '${columns_types_arr[$i]}': " data
-        if [[ ${columns_types_arr[$i]} == "digit" ]]; then
-            if ! check_digit_validate_type "$data"; then
-                (( i-- ))
-                continue  # Retry if invalid input
-            fi
-        elif [[ ${columns_types_arr[$i]} == "string" ]]; then
-            if ! check_string_validate_type "$data"; then
-                (( i-- ))
-                continue
-            fi
-        fi
+    validate_value_type $data $i
+    echo "is Valid data" $isValid
+    if [[ $isValid == false ]]; then
+        (( i-- ))
+        continue
+    fi
+        # if [[ ${columns_types_arr[$i]} == "digit" ]]; then
+        #     if ! check_digit_validate_type "$data"; then
+        #         (( i-- ))
+        #         continue  # Retry if invalid input
+        #     fi
+        # elif [[ ${columns_types_arr[$i]} == "string" ]]; then
+        #     if ! check_string_validate_type "$data"; then
+        #         (( i-- ))
+        #         continue
+        #     fi
+        # fi
     data_values+="$data:"
     done
 
@@ -381,7 +402,7 @@ table_menu() {
     read -p "enter your choice : " choice
     case $choice in
         1) select_from_table ;;
-        2) insert_into_table ;;
+        2) insert ;;
         3) delete_from_table ;;
         4) update_into_table ;;
         5) exit 0 ;;
