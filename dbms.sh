@@ -347,13 +347,13 @@ update_into_table() {
 }
 connect_to_table() {
     read -p "opent table: " table_name
-    if [ -f "./$table_name" ]; then
+    if [ -f "$table_name" ]; then
         echo "connected"
+        # clear
+        table_menu
     else
         echo "***Table $table_name does not exist***"
     fi
-    clear
-    table_menu
 
 }
 select_from_table() {
@@ -393,13 +393,14 @@ database_menu(){
         2) list_database_tables ;;
         3) drop_database_table ;;
         4) connect_to_table ;;
-        5) cd ..
+        5) cd ../..
             main_menu ;;
         *) echo "wrong input" ;;
     esac
     done
 }
 
+# why?
 table_menu() {
     while true; do
     table_menu_display
