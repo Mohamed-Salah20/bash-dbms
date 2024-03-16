@@ -53,8 +53,18 @@ table_menu_display(){
     echo "3. delete from $table_name"
     echo "4. update $table_name"
     echo "5. exit"
-
+    echo "************"
 }
+
+select_menu_display(){
+    echo "***********"
+    echo "Select Menu:"
+    echo "1. select * from $table_name"
+    echo "2. select by primary key from $table_name"
+    echo "5. exit"
+    echo "************"
+}
+
 #####database_functions#####
 create_database(){
 
@@ -174,10 +184,17 @@ set_table_schema() {
     read -p "Enter Number of Columns: " columns_count
     local array=()
     local data_Types_Array=()
-    local is_primary_key='n'
+    # local is_primary_key='n'
+    local primary_key=""
     for ((i = 0; i < ${columns_count}; i++));
     do
-        read -p "Enter column name : " column_name
+        # 
+        if [ $i -eq 0 ]; then
+        echo "note first column will be primary key"
+        fi
+
+        read -p "Enter column name : " column_name        
+        
         if valid_regex "$column_name"; then
             if [[ ${array[@]} =~ "$column_name"  ]]; then
                 (( i-- ))
@@ -185,17 +202,24 @@ set_table_schema() {
                 continue
             else
                 array[i]=$column_name #store columns in array
+                # 
+                if [ $i -eq 0 ]; then
+                primary_key=$column_name
+                fi
+                # 
             fi      
 
             read -p "Enter column type : " column_type
             if check_column_type "$column_type"; then
                 data_Types_Array[i]=$column_type #store data types in array
-                if [[ $is_primary_key != "y" && $is_primary_key != "Y" ]]; then
-                    read -p "is Primary key (y/n): " is_primary_key
-                    if [[ $is_primary_key == "y" || $is_primary_key == "Y" ]]; then
-                        echo $column_name >> $table_name #store the primary key
-                    fi
-                fi
+                
+                
+                # if [[ $is_primary_key != "y" && $is_primary_key != "Y" ]]; then
+                #     read -p "is Primary key (y/n): " is_primary_key
+                #     if [[ $is_primary_key == "y" || $is_primary_key == "Y" ]]; then
+                #         echo $column_name >> $table_name #store the primary key
+                #     fi
+                # fi
             else
                 echo "***Invalid column type***"
                 (( i-- ))
@@ -206,6 +230,7 @@ set_table_schema() {
         fi    
     done
     # save schema to table file
+    echo $primary_key >> $table_name # store the primary key
     echo ${#array[@]} >> $table_name # store columns number in schema
     
      # separate elements by delim :
@@ -237,29 +262,47 @@ check_column_type() {
 #############################################
 ####################CRUD OPERATIONS##########
 
-validate_value_type(){
-    #check whether the value type is valid for the value type of the column type
-    local value=$1
-    local index=$2
-    isValid=false #flag to check if value is valid for this column type
-    if [[ $value =~ ^[0-9]+$ && ${columns_types_arr[$index]} == 'digit' ]]; then
-        echo "Integer"
-        isValid=true
+validate_value_primary_key() {
 
-    #mo note:why float? if so we should add another column type in schema  
-    elif [[ $value =~ ^[0-9]+\.[0-9]+$ && ${columns_types_arr[$index]} == 'digit' ]]; then
-        echo "Float"
-        isValid=true
+local value=$1
 
-    #mo note:string old regex used is not working ^(?![0-9]*$)[a-zA-Z0-9]+$, also storing only digits as strings should be acceptable, the same goes for - and _
-    elif [[ $value =~ ^[a-zA-Z0-9_-]+$ && ${columns_types_arr[$index]} == 'string' ]]; then
-        echo "String"
-        isValid=true
-    else
-        echo "Invalid Input"
-        isValid=false
-    fi
+# check if the primary key value is unique
+if ! grep -q "^$value:" "$table_name"; then # --quiet from man page: Quiet;   do   not  write  anything  to  standard  output.   Exit immediately with zero status if any match is found
+    return 0  # unique primary key
+else
+    echo "Primary key '$value' already exists."
+    return 1  # duplicate primary key
+fi
+
 }
+
+
+# validate_value_type(){
+#     #check whether the value type is valid for the value type of the column type
+#     local value=$1
+#     local index=$2
+#     # mo note: please refrain from using global variables ex. isValid
+#     # isValid=false #flag to check if value is valid for this column type
+#     if [[ $value =~ ^[0-9]+$ && ${columns_types_arr[$index]} == 'digit' ]]; then
+#         echo "Integer"
+#         # isValid=true
+#         return 0
+#     #mo note:why float? if so we should add another column type in schema  
+#     elif [[ $value =~ ^[0-9]+\.[0-9]+$ && ${columns_types_arr[$index]} == 'digit' ]]; then
+#         echo "Float"
+#         # isValid=true
+#         return 0
+#     #mo note:string old regex used is not working ^(?![0-9]*$)[a-zA-Z0-9]+$, also storing only digits as strings should be acceptable, the same goes for - and _
+#     elif [[ $value =~ ^[a-zA-Z0-9_-]+$ && ${columns_types_arr[$index]} == 'string' ]]; then
+#         echo "String"
+#         # isValid=true
+#         return 0
+#     else
+#         echo "Invalid Input"
+#         # isValid=false
+#         return 1
+#     fi
+# }
 
 check_digit_validate_type(){
     if [[ $1 =~ ^[0-9]+$ ]]; then
@@ -288,16 +331,18 @@ insert() {
     # return 1
     # fi
 
-    # # Check if table exists
-    # if [ ! -f "$table_name" ]; then
-    # echo "Table '$table_name' does not exist"
-    # return 1
-    # fi
+    # Check if table exists
+    if [ ! -f "$table_name" ]; then
+    echo "Table '$table_name' does not exist"
+    return 1
+    fi
 
     # Read schema details
     columns_count=$(awk 'NR==2 {print}' "$table_name")
     columns_names_arr=($(awk 'NR==4 {print}' "$table_name" | tr ":" " "))
     columns_types_arr=($(awk 'NR==3 {print}' "$table_name" | tr ":" " "))
+    column_type_primary_key=$(awk 'NR==1 {print}' "$table_name")
+
 
     # testing
     # echo "columns_count : $columns_count"
@@ -308,24 +353,35 @@ insert() {
     # Prompt for data for each column
     data_values=""
     for ((i = 0; i < columns_count; i++)); do
-    read -p "Enter value for '${columns_names_arr[$i]}' of data type '${columns_types_arr[$i]}': " data
-    validate_value_type $data $i
-    echo "is Valid data" $isValid
-    if [[ $isValid == false ]]; then
-        (( i-- ))
-        continue
-    fi
-        # if [[ ${columns_types_arr[$i]} == "digit" ]]; then
-        #     if ! check_digit_validate_type "$data"; then
-        #         (( i-- ))
-        #         continue  # Retry if invalid input
-        #     fi
-        # elif [[ ${columns_types_arr[$i]} == "string" ]]; then
-        #     if ! check_string_validate_type "$data"; then
-        #         (( i-- ))
-        #         continue
-        #     fi
+        read -p "Enter value for '${columns_names_arr[$i]}' of data type '${columns_types_arr[$i]}': " data
+
+        # # Validate the entered value
+        # if ! validate_value_type "$data" "${columns_types_arr[$i]}"; then
+        #     (( i-- ))
+        #     continue
         # fi
+
+
+        if [[ ${columns_types_arr[$i]} == "digit" ]]; then
+            if ! check_digit_validate_type "$data"; then
+                (( i-- ))
+                continue  # Retry if invalid input
+            fi
+        elif [[ ${columns_types_arr[$i]} == "string" ]]; then
+            if ! check_string_validate_type "$data"; then
+                (( i-- ))
+                continue
+            fi
+        fi
+
+        if [[ "${columns_names_arr[$i]}" == "$column_type_primary_key" ]]; then
+            if grep -q "^$data:" "$table_name"; then
+                echo "Value '$data' is not unique in the primary key column '${columns_names_arr[$i]}'"
+                (( i-- ))
+                continue
+            fi
+        fi
+
     data_values+="$data:"
     done
 
@@ -339,7 +395,23 @@ insert() {
 }
 
 delete_from_table() {
+    
     echo "delete from table"
+    read -p "Enter the value of the primary key to delete the corresponding row: " primary_key_value
+
+    # Check if the primary key value exists in the table
+    if grep -q "^$primary_key_value:" "$table_name"; then
+        # Temporarily store contents of the table excluding the row with the specified primary key
+        awk -v key="$primary_key_value" -F ":" '$1 != key {print}' "$table_name" > temp_table
+
+        # Overwrite the original table file with the temporary file (excluding the deleted row)
+        mv temp_table "$table_name"
+
+        echo "Row with primary key '$primary_key_value' deleted successfully."
+    else
+        echo "Row with primary key '$primary_key_value' not found in the table."
+    fi
+
 }
 
 update_into_table() {
@@ -356,11 +428,28 @@ connect_to_table() {
     fi
 
 }
-select_from_table() {
-    #Select * from Table
-    awk 'BEGIN{FS=": ";} {if(NR> 3){gsub(/:/, "\t|\t", $0);print;}}' ./$table_name
 
+select_from_table_all() {
+    awk 'BEGIN{FS=": ";} {if(NR> 3){gsub(/:/, "\t|\t", $0);print;}}' ./$table_name
 }
+
+select_from_table_by_primary_key() {
+    read -p "Enter the value of the primary key to select the corresponding row: " primary_key_value
+
+    # Check if the primary key value exists in the table
+    if grep -q "^$primary_key_value:" "$table_name"; then
+        
+        column_names=$(awk 'NR==4 {print}' "$table_name" | sed 's/:/\t|\t/g')
+        
+        # Output the column names first separated by sed command
+        echo "$column_names"
+        # Filter the table to display only the row with the specified primary key
+        awk -v key="$primary_key_value" -F ":" 'NR>4 && $1 == key {print $0}' "$table_name" | sed 's/:/\t|\t/g'
+    else
+        echo "Row with primary key '$primary_key_value' not found in the table."
+    fi
+}
+
 ################# END OF CRUD #################
 
 #################starting of the script################
@@ -406,13 +495,31 @@ table_menu() {
     table_menu_display
     read -p "enter your choice : " choice
     case $choice in
-        1) select_from_table ;;
+        1) select_from_table_menu ;;
         2) insert ;;
         3) delete_from_table ;;
         4) update_into_table ;;
-        5) exit 0 ;;
+        5) database_menu ;;
     esac
     done
+}
+
+select_from_table_menu() {
+    select_menu_display
+    read -p "choice : " choice_select
+    case "$choice_select" in
+    #Select * from Table    
+    1) 
+    select_from_table_all
+    ;;
+    2)
+    select_from_table_by_primary_key    
+    ;;
+    5)
+    table_menu    
+    ;;
+    *) echo "invalid input" ;;
+    esac
 }
 
 main_menu
