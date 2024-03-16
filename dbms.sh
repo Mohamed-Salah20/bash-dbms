@@ -11,7 +11,7 @@ fi
 #use this function for all name validation checks, note 0 return statues is success while 1 is failure 
 valid_regex(){
 local input=$1
-regex='^[A-Za-z0-9_-]*$'
+regex='^[A-Za-z][A-Za-z0-9_-]*$'
 if [[ $input =~ $regex ]]; then
     return 0 #return successful
 else
@@ -27,9 +27,9 @@ main_menu_display(){
     echo "Main Menu:"
     echo "1. create database"
     echo "2. list databases"
-    echo "3. connect to databases"
-    echo "4. drop database"
-    echo "5. exit"
+    echo "3. drop database"
+    echo "4. connect to databases"
+    echo "0. exit"
     echo "************"
     echo -e "\n"
 }
@@ -41,35 +41,42 @@ database_menu_display(){
     echo "1. create table"
     echo "2. list tables"
     echo "3. drop table"
-    echo "4. connect to table"
-    echo "5. exit"
+    echo "4. CRUD operation on table"
+    echo "0. exit"
     echo "************"
+    echo -e "\n"
 }
 table_menu_display(){
+    echo -e "\n"
     echo "***********"
     echo "Table Menu:"
     echo "1. select from $table_name"
     echo "2. insert into $table_name"
     echo "3. delete from $table_name"
     echo "4. update $table_name"
-    echo "5. exit"
+    echo "0. exit"
     echo "************"
+    echo -e "\n"
 }
 
 select_menu_display(){
+    echo -e "\n"
     echo "***********"
     echo "Select Menu:"
     echo "1. select * from $table_name"
     echo "2. select by primary key from $table_name"
-    echo "5. exit"
+    echo "0. exit"
     echo "************"
+    echo -e "\n"
 }
 update_menu_display(){
+    echo -e "\n"
     echo "***********"
     echo "Update Menu:"
     echo "1. Update $table_name by primary key"
-    echo "5. exit"
+    echo "0. exit"
     echo "************"
+    echo -e "\n"
 }
 #####database_functions#####
 create_database(){
@@ -97,15 +104,15 @@ list_databases(){
 
 drop_database(){
     read -p "Database name :"  db_name
-    if valid_regex "$db_name"
-        then
-            if db_exists $db_name
-                then
-                rm -rf "./db/$db_name"
-                echo "database" $db_name "Deleted successfully"
-            else
-                echo "***Database $db_name does not exist***"
-            fi
+    if valid_regex "$db_name"; then
+        if db_exists $db_name; then
+            rm -rf "./db/$db_name"
+            echo "database" $db_name "Deleted successfully"
+        else
+            echo "***Database $db_name does not exist***"
+        fi
+    else
+        echo "***Invalid Input, Enter a valid db name***"    
     fi
 
 }
@@ -117,7 +124,7 @@ connect_database(){
 
     if db_exists $db_name; then
         cd "./db/$db_name"
-        echo "connect to database $db_name"
+        echo "connected to database $db_name"
         database_menu
     else
         echo "***Database $db_name does not exist***"
@@ -152,18 +159,18 @@ create_database_table(){
     then
         echo "***Table $table_name already exists***"
     else
-        touch ./$table_name
-        # if [ ! -f "./Metadata.inf" ]
-        # then
-        #     touch ./Metadata.inf
+        # touch ./$table_name
+        # # if [ ! -f "./Metadata.inf" ]
+        # # then
+        # #     touch ./Metadata.inf
         
-        # else
-        #     echo "$table_name: " >> Metadata.inf
-        # fi
-        echo "Table Created Successfully"
+        # # else
+        # #     echo "$table_name: " >> Metadata.inf
+        # # fi
+        # echo "Table Created Successfully"
         
-        # choice=3 # to connect to database
-        # PS1="$db_name-$table_name: "
+        # # choice=3 # to connect to database
+        # # PS1="$db_name-$table_name: "
         set_table_schema
     fi
     else
@@ -177,17 +184,39 @@ ls
 
 drop_database_table(){
     read -p "Enter Table name : " table_name
+
+    if ! valid_regex "$table_name" ; then
+        echo "***Invalid regex***"
+        return 1
+    fi
+
     if [ -f "./$table_name" ]; then
     rm -rf ./$table_name
-    echo "Table Deleted Successfully"
+    echo "Table $table_name Deleted Successfully"
     else
     echo "***Table $table_name does not exist***"
     fi
 
 }
 
+
+check_number_validate_type(){
+    if [[ $1 =~ ^[1-9][0-9]*$ ]]; then
+        return 0  # Valid number
+    else
+        return 1  # Invalid number
+    fi
+}
+
 set_table_schema() {
     read -p "Enter Number of Columns: " columns_count
+    
+    if ! check_number_validate_type "$columns_count"; then
+    echo "Invalid number of columns"
+    return 1 #
+    fi
+
+
     local array=()
     local data_Types_Array=()
     # local is_primary_key='n'
@@ -199,26 +228,31 @@ set_table_schema() {
         echo "note first column will be primary key"
         fi
 
-        read -p "Enter column name : " column_name        
+        read -p "Enter column $(($i + 1)) name : " column_name        
         
         if valid_regex "$column_name"; then
             if [[ ${array[@]} =~ "$column_name"  ]]; then
-                (( i-- ))
                 echo "***Column $column_name already exists***"
+                (( i-- ))
                 continue
-            else
-                array[i]=$column_name #store columns in array
+            # else
+            #     array[i]=$column_name #store columns in array
+            #     # 
+            #     if [ $i -eq 0 ]; then
+            #     primary_key=$column_name
+            #     fi
+            #     # 
+            fi      
+
+            read -p "Enter column $(( $i + 1 )) type, (string|digit) : " column_type
+            if check_column_type "$column_type"; then
+                data_Types_Array[i]=$column_type #store data types in array
+                
+                array[i]=$column_name #store columns names in array
                 # 
                 if [ $i -eq 0 ]; then
                 primary_key=$column_name
                 fi
-                # 
-            fi      
-
-            read -p "Enter column type : " column_type
-            if check_column_type "$column_type"; then
-                data_Types_Array[i]=$column_type #store data types in array
-                
                 
                 # if [[ $is_primary_key != "y" && $is_primary_key != "Y" ]]; then
                 #     read -p "is Primary key (y/n): " is_primary_key
@@ -227,17 +261,17 @@ set_table_schema() {
                 #     fi
                 # fi
             else
-                echo "***Invalid column type***"
+                echo "***Invalid column type, must write "string" or "digit" ***"
                 (( i-- ))
                 continue
             fi    
         else
             echo "***Invalid Input, Enter a valid column name***"
-        fi    
+            (( i-- ))
+            continue
+        fi
+        echo     
     done
-    # save schema to table file
-    echo $primary_key >> $table_name # store the primary key
-    echo ${#array[@]} >> $table_name # store columns number in schema
     
      # separate elements by delim :
     array_delimitar=$(printf ":%s" ${array[@]})
@@ -246,6 +280,14 @@ set_table_schema() {
     array_delimitar=${array_delimitar:1}
     data_Types_Array_Delimitar=${data_Types_Array_Delimitar:1}
 
+    
+    # create table file
+    touch ./$table_name
+    echo "Table Created Successfully"
+
+    # save schema to table file
+    echo $primary_key >> $table_name # store the primary key
+    echo ${#array[@]} >> $table_name # store columns number in schema
     echo $array_delimitar
     echo $data_Types_Array_Delimitar
 
@@ -320,7 +362,7 @@ check_digit_validate_type(){
 }
 
 check_string_validate_type(){
-  if [[ $1 =~ ^[a-zA-Z0-9_-]+$ ]]; then # handle accepted characters later
+  if [[ $1 =~ ^[a-zA-Z0-9_@.-]*$ ]]; then # handle accepted characters later
     return 0  # Valid string
   else
     echo "***Invalid string input***"
@@ -473,23 +515,23 @@ delete_from_table() {
 
 }
 
-update_into_table() {
-    echo "update into table"
-}
 connect_to_table() {
-    read -p "opent table: " table_name
-    if [ -f "$table_name" ]; then
-        echo "connected"
-        # clear
-        table_menu
+    read -p "table name: " table_name
+    if valid_regex "$table_name"; then
+        if [ -f "$table_name" ]; then
+            echo "table : " "$table_name"
+            # clear
+            table_menu
+        else
+            echo "***Table $table_name does not exist***"
+        fi
     else
-        echo "***Table $table_name does not exist***"
+        echo "***Invalid regex: $table_name***"
     fi
-
 }
 
 select_from_table_all() {
-    awk 'BEGIN{FS=": ";} {if(NR> 3){gsub(/:/, "\t|\t", $0);print;}}' ./$table_name
+    awk 'BEGIN{FS=": ";} {if(NR> 3){gsub(/:/, "\t\t|\t\t", $0);print;}}' ./$table_name
 }
 
 select_from_table_by_primary_key() {
@@ -498,12 +540,12 @@ select_from_table_by_primary_key() {
     # Check if the primary key value exists in the table
     if grep -q "^$primary_key_value:" "$table_name"; then
         
-        column_names=$(awk 'NR==4 {print}' "$table_name" | sed 's/:/\t|\t/g')
+        column_names=$(awk 'NR==4 {print}' "$table_name" | sed 's/:/\t\t|\t\t/g')
         
         # Output the column names first separated by sed command
         echo "$column_names"
         # Filter the table to display only the row with the specified primary key
-        awk -v key="$primary_key_value" -F ":" 'NR>4 && $1 == key {print $0}' "$table_name" | sed 's/:/\t|\t/g'
+        awk -v key="$primary_key_value" -F ":" 'NR>4 && $1 == key {print $0}' "$table_name" | sed 's/:/\t\t|\t\t/g'
     else
         echo "Row with primary key '$primary_key_value' not found in the table."
     fi
@@ -522,9 +564,9 @@ read -p "enter your choice : " choice
 case $choice in
 1) create_database ;;
 2) list_databases ;;
-3) connect_database ;;
-4) drop_database ;;
-5) exit 0 ;;
+3) drop_database ;;
+4) connect_database ;;
+0) exit 0 ;;
 *) echo "wrong input" ;;
 esac
 done
@@ -541,7 +583,7 @@ database_menu(){
         2) list_database_tables ;;
         3) drop_database_table ;;
         4) connect_to_table ;;
-        5) cd ../..
+        0) cd ../..
             main_menu ;;
         *) echo "wrong input" ;;
     esac
@@ -558,7 +600,7 @@ table_menu() {
         2) insert ;;
         3) delete_from_table ;;
         4) update_menu ;;
-        5) database_menu ;;
+        0) database_menu ;;
     esac
     done
 }
@@ -574,10 +616,11 @@ select_from_table_menu() {
     2)
     select_from_table_by_primary_key    
     ;;
-    5)
+    0)
     table_menu    
     ;;
-    *) echo "invalid input" ;;
+    *) 
+    echo "invalid input" ;;
     esac
 }
 
@@ -588,7 +631,7 @@ update_menu(){
     1)     
     update_table_by_primary_key
     ;;
-    5)
+    0)
     table_menu    
     ;;
     *) echo "invalid input" ;;
