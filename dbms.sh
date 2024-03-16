@@ -64,7 +64,13 @@ select_menu_display(){
     echo "5. exit"
     echo "************"
 }
-
+update_menu_display(){
+    echo "***********"
+    echo "Update Menu:"
+    echo "1. Update $table_name by primary key"
+    echo "5. exit"
+    echo "************"
+}
 #####database_functions#####
 create_database(){
 
@@ -394,6 +400,59 @@ insert() {
   echo "Data inserted successfully!"
 }
 
+update_table_by_primary_key() {
+    read -p "Enter the value of the primary key to update the corresponding row: " primary_key_value
+
+    # Check if the primary key value exists in the table
+    if grep -q "^$primary_key_value:" "$table_name"; then
+        # Read my schema details
+        columns_count=$(awk 'NR==2 {print}' "$table_name")
+        columns_names_arr=($(awk 'NR==4 {print}' "$table_name" | tr ":" " "))
+        columns_types_arr=($(awk 'NR==3 {print}' "$table_name" | tr ":" " "))
+        column_type_primary_key=$(awk 'NR==1 {print}' "$table_name")
+
+        new_values=""
+        for ((i = 0; i < columns_count; i++)); do
+            if [ $i -eq 0 ]; then
+                # Skip updating the primary key column and keep its value unchanged
+                new_value=$primary_key_value
+            else
+                read -p "Enter new value for '${columns_names_arr[$i]}' (${columns_types_arr[$i]}): " new_value
+
+                # Validate the entered value based on its data type
+                if [[ ${columns_types_arr[$i]} == "digit" ]]; then
+                    if ! check_digit_validate_type "$new_value"; then
+                        (( i-- ))
+                        continue  # Retry if invalid input
+                    fi
+                elif [[ ${columns_types_arr[$i]} == "string" ]]; then
+                    if ! check_string_validate_type "$new_value"; then
+                        (( i-- ))
+                        continue
+                    fi
+                fi
+            fi
+
+            # Construct the new row values
+            new_values+="$new_value:"
+        done
+
+        # Remove the trailing colon from new_values
+        new_values=${new_values::-1}
+
+        # Temporarily store contents of the table excluding the row with the specified primary key
+        awk -v key="$primary_key_value" -v new_row="$new_values" -F ":" '$1 != key {print} $1 == key {print new_row}' "$table_name" > temp_table
+
+        # Overwrite the original table file with the temporary file (including the updated row)
+        mv temp_table "$table_name"
+
+        echo "Row with primary key '$primary_key_value' updated successfully."
+    else
+        echo "Row with primary key '$primary_key_value' not found in the table."
+    fi
+}
+
+
 delete_from_table() {
     
     echo "delete from table"
@@ -498,7 +557,7 @@ table_menu() {
         1) select_from_table_menu ;;
         2) insert ;;
         3) delete_from_table ;;
-        4) update_into_table ;;
+        4) update_menu ;;
         5) database_menu ;;
     esac
     done
@@ -508,8 +567,8 @@ select_from_table_menu() {
     select_menu_display
     read -p "choice : " choice_select
     case "$choice_select" in
-    #Select * from Table    
     1) 
+    #Select * from Table    
     select_from_table_all
     ;;
     2)
@@ -522,5 +581,18 @@ select_from_table_menu() {
     esac
 }
 
+update_menu(){
+    update_menu_display
+    read -p "choice : " choice_update
+    case "$choice_update" in
+    1)     
+    update_table_by_primary_key
+    ;;
+    5)
+    table_menu    
+    ;;
+    *) echo "invalid input" ;;
+    esac    
+}
 main_menu
 
